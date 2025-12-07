@@ -2,6 +2,30 @@
 figma.showUI(__html__);
 figma.ui.resize(400, 480); // Adjusted height slightly to accommodate controls if needed
 
+// Helper function to recursively find all text nodes within a node
+function findTextNodes(node: SceneNode): TextNode[] {
+    if (node.type === 'TEXT') {
+        return [node];
+    }
+    if ('children' in node) {
+        const textNodes: TextNode[] = [];
+        for (const child of node.children) {
+            textNodes.push(...findTextNodes(child));
+        }
+        return textNodes;
+    }
+    return [];
+}
+
+// Helper function to get all text nodes from selection (including nested)
+function getTextNodesFromSelection(): TextNode[] {
+    const textNodes: TextNode[] = [];
+    for (const node of figma.currentPage.selection) {
+        textNodes.push(...findTextNodes(node));
+    }
+    return textNodes;
+}
+
 // Helper function to get properties from a single text node
 function getTextNodeProperties(node: TextNode) {
     let fontSize: number = 50;
@@ -41,8 +65,7 @@ function getTextNodeProperties(node: TextNode) {
 
 // Helper function to get initial text properties from selection
 function getInitialTextProperties() {
-    const selection = figma.currentPage.selection;
-    const textNodes = selection.filter(node => node.type === 'TEXT') as TextNode[];
+    const textNodes = getTextNodesFromSelection();
 
     if (textNodes.length === 0) {
         return {
@@ -89,8 +112,7 @@ figma.ui.postMessage({
 
 // Listen for selection changes
 figma.on('selectionchange', () => {
-    const newSelection = figma.currentPage.selection;
-    const textNodes = newSelection.filter(node => node.type === 'TEXT');
+    const textNodes = getTextNodesFromSelection();
 
     if (textNodes.length > 0) {
         const { initialFontSize, initialLineHeight, initialLetterSpacing, initialLineWidth } = getInitialTextProperties();
@@ -260,13 +282,11 @@ figma.ui.onmessage = async (msg) => {
         const { fontSize, lineWidth, lineHeight, letterSpacing, textStyle } = msg;
         const replaceOriginal = msg.type === 'convert-text';
 
-        // Get all selected text nodes
-        const textNodes = figma.currentPage.selection.filter(
-            node => node.type === 'TEXT'
-        ) as TextNode[];
+        // Get all text nodes from selection (including nested in groups/frames)
+        const textNodes = getTextNodesFromSelection();
 
         if (textNodes.length === 0) {
-            figma.notify('Please select at least one text layer to convert.', { timeout: 3000 });
+            figma.notify('No text layers found in selection.', { timeout: 3000 });
             figma.ui.postMessage({ type: 'close' });
             return;
         }
