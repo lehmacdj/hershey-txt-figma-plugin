@@ -297,9 +297,6 @@ figma.ui.onmessage = async (msg) => {
         // Select all newly created vector nodes
         figma.currentPage.selection = createdVectors;
 
-        // Zoom to fit the new nodes
-        figma.viewport.scrollAndZoomIntoView(createdVectors);
-
         const layerText = textNodes.length === 1 ? 'layer' : 'layers';
         const notifyMessage = replaceOriginal
             ? `${textNodes.length} text ${layerText} converted to vector paths!`
