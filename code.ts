@@ -39,16 +39,20 @@ function getInitialTextProperties() {
         }
     }
 
-    return { initialFontSize, initialLineHeight, initialLetterSpacing };
+    // Calculate line width as a proportion of font size (fontSize / 12, rounded, max 2px)
+    const initialLineWidth = Math.min(2, Math.max(1, Math.round(initialFontSize / 12)));
+
+    return { initialFontSize, initialLineHeight, initialLetterSpacing, initialLineWidth };
 }
 
 // Initial load: Get properties and send to UI
-const { initialFontSize, initialLineHeight, initialLetterSpacing } = getInitialTextProperties();
+const { initialFontSize, initialLineHeight, initialLetterSpacing, initialLineWidth } = getInitialTextProperties();
 figma.ui.postMessage({
     type: 'set-initial-values',
     fontSize: initialFontSize,
     lineHeight: initialLineHeight,
-    letterSpacing: initialLetterSpacing
+    letterSpacing: initialLetterSpacing,
+    lineWidth: initialLineWidth
 });
 
 // Listen for selection changes
@@ -56,12 +60,13 @@ figma.on('selectionchange', () => {
     const newSelection = figma.currentPage.selection;
     if (newSelection.length === 1 && newSelection[0].type === 'TEXT') {
         // If a single text node is selected, update UI with its properties
-        const { initialFontSize, initialLineHeight, initialLetterSpacing } = getInitialTextProperties();
+        const { initialFontSize, initialLineHeight, initialLetterSpacing, initialLineWidth } = getInitialTextProperties();
         figma.ui.postMessage({
             type: 'set-initial-values',
             fontSize: initialFontSize,
             lineHeight: initialLineHeight,
-            letterSpacing: initialLetterSpacing
+            letterSpacing: initialLetterSpacing,
+            lineWidth: initialLineWidth
         });
         figma.notify('Updated values from selected text layer.', { timeout: 1000 });
     } else {
@@ -70,7 +75,8 @@ figma.on('selectionchange', () => {
             type: 'set-initial-values',
             fontSize: 50, // Default font size
             lineHeight: 28, // Default line height
-            letterSpacing: 0 // Default letter spacing
+            letterSpacing: 0, // Default letter spacing
+            lineWidth: 2 // Default line width (capped at 2px)
         });
         figma.notify('No single text layer selected. Reverted to default values.', { timeout: 1000 });
     }

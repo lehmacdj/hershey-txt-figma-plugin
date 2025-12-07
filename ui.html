@@ -220,7 +220,7 @@
 
     // Listen for messages from the plugin code (code.ts)
     window.onmessage = (event) => {
-      const { type, fontSize, lineHeight, letterSpacing } = event.data.pluginMessage; // Destructure new values
+      const { type, fontSize, lineHeight, letterSpacing, lineWidth } = event.data.pluginMessage;
       if (type === 'set-initial-values') {
         if (fontSize !== undefined) {
           fontSizeInput.value = fontSize;
@@ -230,6 +230,9 @@
         }
         if (letterSpacing !== undefined) {
           letterSpacingInput.value = letterSpacing;
+        }
+        if (lineWidth !== undefined) {
+          lineWidthInput.value = lineWidth;
         }
       }
     };
