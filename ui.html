@@ -218,65 +218,63 @@
     const closeButton = document.getElementById('close');
 
 
+    const AUTO_PLACEHOLDER = 'auto (per layer)';
+
+    // Helper to set input value or placeholder for mixed values
+    function setInputValue(input, value) {
+      if (value === null) {
+        input.value = '';
+        input.placeholder = AUTO_PLACEHOLDER;
+      } else if (value !== undefined) {
+        input.value = value;
+        input.placeholder = '';
+      }
+    }
+
     // Listen for messages from the plugin code (code.ts)
     window.onmessage = (event) => {
       const { type, fontSize, lineHeight, letterSpacing, lineWidth } = event.data.pluginMessage;
       if (type === 'set-initial-values') {
-        if (fontSize !== undefined) {
-          fontSizeInput.value = fontSize;
-        }
-        if (lineHeight !== undefined) {
-          lineHeightInput.value = lineHeight;
-        }
-        if (letterSpacing !== undefined) {
-          letterSpacingInput.value = letterSpacing;
-        }
-        if (lineWidth !== undefined) {
-          lineWidthInput.value = lineWidth;
-        }
+        setInputValue(fontSizeInput, fontSize);
+        setInputValue(lineHeightInput, lineHeight);
+        setInputValue(letterSpacingInput, letterSpacing);
+        setInputValue(lineWidthInput, lineWidth);
       }
     };
 
-    // Event listener for the "Convert" button
-    convertButton.onclick = () => {
-      // Parse input values
-      const fontSize = parseFloat(fontSizeInput.value);
-      const lineWidth = parseFloat(lineWidthInput.value);
-      const lineHeight = parseFloat(lineHeightInput.value);
-      const letterSpacing = parseFloat(letterSpacingInput.value);
+    // Helper to get values (null means use per-layer auto value)
+    function getValues() {
+      const fontSizeVal = fontSizeInput.value.trim();
+      const lineWidthVal = lineWidthInput.value.trim();
+      const lineHeightVal = lineHeightInput.value.trim();
+      const letterSpacingVal = letterSpacingInput.value.trim();
       const textStyle = textStyleSelect.value;
 
-      // Send a message to the Figma plugin code with the user's choices
+      return {
+        fontSize: fontSizeVal === '' ? null : parseFloat(fontSizeVal),
+        lineWidth: lineWidthVal === '' ? null : parseFloat(lineWidthVal),
+        lineHeight: lineHeightVal === '' ? null : parseFloat(lineHeightVal),
+        letterSpacing: letterSpacingVal === '' ? null : parseFloat(letterSpacingVal),
+        textStyle
+      };
+    }
+
+    // Event listener for the "Convert" button
+    convertButton.onclick = () => {
       parent.postMessage({
         pluginMessage: {
           type: 'convert-text',
-          fontSize,
-          lineWidth,
-          lineHeight,
-          letterSpacing,
-          textStyle
+          ...getValues()
         }
       }, '*');
     };
 
     // Event listener for the "Insert" button
     insertButton.onclick = () => {
-      // Parse input values
-      const fontSize = parseFloat(fontSizeInput.value);
-      const lineWidth = parseFloat(lineWidthInput.value);
-      const lineHeight = parseFloat(lineHeightInput.value);
-      const letterSpacing = parseFloat(letterSpacingInput.value);
-      const textStyle = textStyleSelect.value;
-
-      // Send a message to the Figma plugin code with the user's choices
       parent.postMessage({
         pluginMessage: {
           type: 'insert-text',
-          fontSize,
-          lineWidth,
-          lineHeight,
-          letterSpacing,
-          textStyle
+          ...getValues()
         }
       }, '*');
     };
