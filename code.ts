@@ -78,8 +78,9 @@ figma.on('selectionchange', () => {
 
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
-    if (msg.type === 'convert-text') {
+    if (msg.type === 'convert-text' || msg.type === 'insert-text') {
         const { fontSize, lineWidth, lineHeight, letterSpacing, textStyle } = msg;
+        const replaceOriginal = msg.type === 'convert-text';
 
         // Ensure only one text node is selected
         if (figma.currentPage.selection.length !== 1 || figma.currentPage.selection[0].type !== 'TEXT') {
@@ -231,13 +232,23 @@ figma.ui.onmessage = async (msg) => {
             vectorNode.strokes = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
         }
 
-        // Replace the original text node with the new vector node
-        if (originalParent && originalIndex !== -1) {
-            originalParent.insertChild(originalIndex, vectorNode);
+        // Insert the vector node into the document
+        if (replaceOriginal) {
+            // Replace: insert at same position and remove original
+            if (originalParent && originalIndex !== -1) {
+                originalParent.insertChild(originalIndex, vectorNode);
+            } else {
+                figma.currentPage.appendChild(vectorNode);
+            }
+            selectedTextNode.remove();
         } else {
-            figma.currentPage.appendChild(vectorNode);
+            // Insert: add next to original without removing it
+            if (originalParent && originalIndex !== -1) {
+                originalParent.insertChild(originalIndex + 1, vectorNode);
+            } else {
+                figma.currentPage.appendChild(vectorNode);
+            }
         }
-        selectedTextNode.remove();
 
         // Position the new vector node so its center aligns with the original text center
         vectorNode.x = originalCenterX - vectorNode.width / 2;
@@ -249,7 +260,10 @@ figma.ui.onmessage = async (msg) => {
         // Zoom to fit the new node (optional)
         figma.viewport.scrollAndZoomIntoView([vectorNode]);
 
-        figma.notify('Text converted to EMS Readability vector paths!', { timeout: 2000 });
+        const notifyMessage = replaceOriginal
+            ? 'Text converted to vector paths!'
+            : 'Vector paths inserted!';
+        figma.notify(notifyMessage, { timeout: 2000 });
         figma.ui.postMessage({ type: 'close' }); // Close the UI after conversion
 
     } else if (msg.type === 'cancel') {
