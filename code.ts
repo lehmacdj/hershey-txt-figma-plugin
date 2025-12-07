@@ -91,6 +91,10 @@ figma.ui.onmessage = async (msg) => {
         const selectedTextNode = figma.currentPage.selection[0] as TextNode;
         const lines = selectedTextNode.characters.split('\n');
         const originalFill = selectedTextNode.fills; // Get original fill color for stroke
+        const originalParent = selectedTextNode.parent;
+        const originalIndex = originalParent ? originalParent.children.indexOf(selectedTextNode) : -1;
+        const originalCenterX = selectedTextNode.x + selectedTextNode.width / 2;
+        const originalCenterY = selectedTextNode.y + selectedTextNode.height / 2;
 
         // Font metrics from EMS Readability SVG font (units-per-em and ascent)
         const unitsPerEm = 1000;
@@ -227,12 +231,17 @@ figma.ui.onmessage = async (msg) => {
             vectorNode.strokes = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }];
         }
 
-        // Position the new vector node relative to the original text node
-        vectorNode.x = selectedTextNode.x;
-        vectorNode.y = selectedTextNode.y + selectedTextNode.height + 10;
+        // Replace the original text node with the new vector node
+        if (originalParent && originalIndex !== -1) {
+            originalParent.insertChild(originalIndex, vectorNode);
+        } else {
+            figma.currentPage.appendChild(vectorNode);
+        }
+        selectedTextNode.remove();
 
-        // Add the new vector node to the current page
-        figma.currentPage.appendChild(vectorNode);
+        // Position the new vector node so its center aligns with the original text center
+        vectorNode.x = originalCenterX - vectorNode.width / 2;
+        vectorNode.y = originalCenterY - vectorNode.height / 2;
 
         // Select the newly created vector node
         figma.currentPage.selection = [vectorNode];
